@@ -1,4 +1,6 @@
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service as ChromeService
+from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
 import time
@@ -9,9 +11,10 @@ import pandas as pd
 START_URL = "https://exoplanets.nasa.gov/exoplanet-catalog/"
 
 # Webdriver
-browser = webdriver.Chrome("D:/Setup/chromedriver_win32/chromedriver.exe")
-browser.get(START_URL)
-
+#browser = webdriver.Chrome("D:/Setup/chromedriver_win32/chromedriver.exe")
+#browser.get(START_URL)
+driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
+driver.get(START_URL)
 time.sleep(10)
 
 planets_data = []
@@ -21,15 +24,15 @@ def scrape():
         while True:
             time.sleep(2)
 
-            soup = BeautifulSoup(browser.page_source, "html.parser")
+            soup = BeautifulSoup(driver.page_source, "html.parser")
 
-            # Verifique o número da página    
+            # Verifique o número da página  
             current_page_num = int(soup.find_all("input", attrs={"class", "page_num"})[0].get("value"))
 
             if current_page_num < i:
-                browser.find_element(By.XPATH, value='//*[@id="primary_column"]/footer/div/div/div/nav/span[2]/a').click()
+                driver.find_element(By.XPATH, value='//*[@id="primary_column"]/footer/div/div/div/nav/span[2]/a').click()
             elif current_page_num > i:
-                browser.find_element(By.XPATH, value='//*[@id="primary_column"]/footer/div/div/div/nav/span[1]/a').click()
+                driver.find_element(By.XPATH, value='//*[@id="primary_column"]/footer/div/div/div/nav/span[1]/a').click()
             else:
                 break
 
@@ -52,7 +55,7 @@ def scrape():
             
             planets_data.append(temp_list)
 
-        browser.find_element(By.XPATH, value='//*[@id="primary_column"]/footer/div/div/div/nav/span[2]/a').click()
+        driver.find_element(By.XPATH, value='//*[@id="primary_column"]/footer/div/div/div/nav/span[2]/a').click()
 
         print(f"Coleta de dados da página {i} concluída")
 
@@ -60,8 +63,15 @@ def scrape():
 # Chamando o método  
 scrape()
 
-# Defina o cabeçalho    
+# Defina o cabeçalho
 headers = ["name", "light_years_from_earth", "planet_mass", "stellar_magnitude", "discovery_date", "hyperlink"]
+
+# Defina o dataframe do pandas
+planet_df_1 = pd.DataFrame(planets_data, columns=headers)
+
+# Converta para CSV
+planet_df_1.to_csv('updated_scraped_data.csv',index=True, index_label="id")
+
 
 # Defina o dataframe do pandas
 planet_df_1 = pd.DataFrame(planets_data, columns=headers)
